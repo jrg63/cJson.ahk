@@ -1,4 +1,6 @@
-
 /Dist/*
-
 /Tests/junit.xml
+JSON_Results_*
+/Src/mcl-include-*
+Src/mcl-input-*
+NUL.o

@@ -1,7 +1,19 @@
-﻿SetWorkingDir A_LineFile '\..\Src'
+﻿#SingleInstance Force
+
+SetWorkingDir A_LineFile '\..\Src'
 
 ; Include the compiler
 #Include %A_LineFile%\..\Src\Lib\MCL.ahk\MCL.ahk
+
+; Point MCL at the WinLibs MinGW installation
+; (plain gcc.exe / g++.exe, not cross-prefixed like x86_64-w64-mingw32-gcc)
+mingwBin := EnvGet('LOCALAPPDATA') '\winlibs-mingw\mingw64\bin'
+if DirExist(mingwBin) {
+    MCL.CompilerPrefix := mingwBin '\'
+    MCL.CompilerSuffix := '.exe'
+    ; Ensure gcc can find its sub-tools (cc1.exe, as.exe, etc.)
+    EnvSet('PATH', mingwBin ';' EnvGet('PATH'))
+}
 
 ; Pull in the C file
 c := '#include "dumps.c"`n#include "loads.c"'
