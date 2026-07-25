@@ -106,6 +106,36 @@ class JSON
         return StrGet(buf, "UTF-16")
     }
 
+    /**
+     * Recursively convert a parsed JSON result into a guaranteed-native
+     * AHK Map/Array tree with full enumeration, Clone, and OwnProps support.
+     *
+     * This is a safety net for edge cases where the DLL-backed result may
+     * not support for..in iteration, .OwnProps(), or .Clone() due to COM
+     * dispatch quirks in the underlying MCode parser. After this call,
+     * the returned object is a plain AHK Map/Array with no COM wrapping.
+     *
+     * @param obj The value returned by {@link JSON.Load} (Map, Array, scalar)
+     * @return A guaranteed-native AHK Map, Array, or scalar
+     */
+    static ToNative(obj) {
+        if !IsObject(obj)
+            return obj
+        if obj is Array {
+            result := Array()
+            result.Capacity := obj.Length
+            for v in obj
+                result.Push(this.ToNative(v))
+            return result
+        }
+        ; Map or Map-like object — iterate and recursively convert
+        result := Map()
+        try result.Capacity := obj.Count
+        for k, v in obj
+            result[k] := this.ToNative(v)
+        return result
+    }
+
     static Parse(json) => this.Load(json)
     static LoadFile(path, options?) => this.Load(FileRead(path, options?))
 

@@ -66,6 +66,21 @@ ahk := RegExReplace(ahk, '`a)\R', '`r`n')
 DirCreate A_LineFile '\..\Dist'
 FileOpen(A_LineFile '\..\Dist\JSON.ahk', 'w').Write(ahk)
 
-; Test the build
-Run A_AhkPath '\..\AutoHotkey64.exe ' A_LineFile '\..\Tests\!TestDist.ahk'
-Run A_AhkPath '\..\AutoHotkey32.exe ' A_LineFile '\..\Tests\!TestDist.ahk'
+; Test the build — run sequentially with RunWait so failures are detected.
+; Pipe through ComSpec so the child process inherits a valid stdout handle
+; (YunitStdOut needs it). Redirect stdout to nul; we rely on exit code + YunitWindow GUI.
+testScript := A_LineFile '\..\Tests\!TestDist.ahk'
+
+ahk64 := A_AhkPath '\..\AutoHotkey64.exe'
+if FileExist(ahk64) {
+    exitCode := RunWait(A_ComSpec ' /c ""' ahk64 '" "' testScript '" > nul 2>&1"', A_LineFile '\..')
+    if exitCode
+        throw Error('64-bit tests FAILED (exit code ' exitCode ')')
+}
+
+ahk32 := A_AhkPath '\..\AutoHotkey32.exe'
+if FileExist(ahk32) {
+    exitCode := RunWait(A_ComSpec ' /c ""' ahk32 '" "' testScript '" > nul 2>&1"', A_LineFile '\..')
+    if exitCode
+        throw Error('32-bit tests FAILED (exit code ' exitCode ')')
+}

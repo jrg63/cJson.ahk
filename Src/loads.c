@@ -17,22 +17,25 @@
 
 void comobjset(IDispatch *pObj, BSTR key, VARIANT *value)
 {
-	// Get the DispID for DISPATCH_PROPERTYPUT
-	DISPID dispid = 0;
-	pObj->lpVtbl->GetIDsOfNames(pObj, IID_NULL, &key, 1, 0, &dispid);
+	// Use Map.Set(key, value) via DISPATCH_METHOD instead of DISPATCH_PROPERTYPUT.
+	// DISPATCH_PROPERTYPUT sets COM dynamic properties on the dispatch wrapper,
+	// which bypasses AHK Map's internal hashtable. This breaks for..in, OwnProps(),
+	// and Clone().  Calling Set() properly populates the Map's native storage.
+	LPOLESTR nameSet = L"Set";
+	DISPID dispidSet = 0;
+	pObj->lpVtbl->GetIDsOfNames(pObj, IID_NULL, &nameSet, 1, 0, &dispidSet);
 
+	// COM args are passed in reverse order: value first, then key
 	VARIANT args[2];
-	args[0].vt = value->vt;
-	args[0].llVal = value->llVal;
+	args[0] = *value;       // arg[0] = value (last in AHK, first in COM)
 	args[1].vt = VT_BSTR;
-	args[1].bstrVal = key;
+	args[1].bstrVal = key;  // arg[1] = key   (first in AHK, last in COM)
 
-	// Set the property
 	DISPPARAMS dispparams = {
 		.cArgs = 2,
 		.cNamedArgs = 0,
 		.rgvarg = args};
-	pObj->lpVtbl->Invoke(pObj, DISPID_VALUE, IID_NULL, 0, DISPATCH_PROPERTYPUT, &dispparams, NULL, NULL, NULL);
+	pObj->lpVtbl->Invoke(pObj, dispidSet, IID_NULL, 0, DISPATCH_METHOD, &dispparams, NULL, NULL, NULL);
 
 	// Decrement the reference count of the object given by pfnGetObj
 	if (value->vt == VT_DISPATCH)
