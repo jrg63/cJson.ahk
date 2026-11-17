@@ -1,1 +1,0 @@
-C:/Users/jacqu/AppData/Roaming/Code/User/globalStorage/GitHub.copilot/init.md
